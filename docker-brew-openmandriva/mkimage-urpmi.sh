@@ -27,7 +27,7 @@ while true; do
 	-a|--arch) arch="$2" ; shift 2 ;;
 	-s|--with-systemd) systemd=systemd ; shift ;;
 	-u|--with-updates) updates=true ; shift ;;
-	-u|--with-passwd) passwd=true ; shift ;;
+	-p|--with-passwd) passwd=true ; shift ;;
 	-U|--without-user) without_user=true ; shift ;;
 	-h|--help) usage ;;
 	-x|--extra-package) extra_packages="$extra_packages $2" ; shift 2 ;;
@@ -84,8 +84,6 @@ install_chroot(){
 
 arm_platform_detector(){
 
-filestore_url="http://file-store.openmandriva.org/api/v1/file_stores"
-
 probe_cpu() {
 cpu="$(uname -m)"
 case "${cpu}" in
@@ -132,7 +130,7 @@ fi
 
 if [ ! -z "${systemd}" ]; then
 # Prevent systemd from starting unneeded services
-    (cd "${target_dir}"/lib/systemd/system/sysinit.target.wants/; for i in *; do [ "$i" = 'systemd-tmpfiles-setup.service' ] || rm -f $i; done); \
+    (cd "${target_dir}"/lib/systemd/system/sysinit.target.wants/; for i in *; do [ "$i" = 'systemd-tmpfiles-setup.service' ] || rm -f "${i}"; done); \
 	rm -f "${target_dir}"/lib/systemd/system/multi-user.target.wants/*;\
 	rm -f "${target_dir}"/etc/systemd/system/*.wants/*;\
 	rm -f "${target_dir}"/lib/systemd/system/local-fs.target.wants/*; \
@@ -169,7 +167,7 @@ if [ ! -z "${passwd}" ]; then
 
 	cat << EOF > "${target_dir}"/README.omv
 OpenMandriva $installversion distro
-default login\password is root:root
+default login and password is root:root
 You must change it!
 EOF
 fi
