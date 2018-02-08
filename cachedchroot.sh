@@ -1,6 +1,6 @@
 #!/bin/sh
 set -x
-printf '%s\\n' '--> docker-builder/cachedchroot.sh'
+printf '%s\n' '--> docker-builder/cachedchroot.sh'
 
 MOCK_BIN=/usr/bin/mock-urpm
 config_dir=/etc/mock-urpm/
