@@ -209,12 +209,11 @@ test_rpm() {
 	[ ! -e "$build_package" ] && mkdir -p "$build_package"
 
 	test_log="${OUTPUT_FOLDER}"/tests-"$(printf '%(%F-%R)T')".log
-	printf '%s\n' "--> Re-running tests on `date -u`" >> $test_log
-	prefix='rerun-tests-'
+	printf '%s\n' "--> Re-running tests on $(date -u)" >> "${test_log}"
 	arr=($packages)
-	cd "$build_package"
+	cd "$build_package" || exit 1
 	for package in ${arr[@]} ; do
-	    echo "--> Downloading '$package'..." >> $test_log
+	    echo "--> Downloading '$package'..." >> "${test_log}"
 	    wget http://file-store.openmandriva.org/api/v1/file_stores/$package --content-disposition --no-check-certificate
 	    rc=$?
 		if [ $rc != 0 ]; then
@@ -229,13 +228,13 @@ test_rpm() {
 #	    	$MOCK_BIN --chroot "urpmi.removemedia -a"
 #		$MOCK_BIN --readdrepo -v --configdir $config_dir --no-cleanup-after --no-clean --update
 #	    else
-	    	$MOCK_BIN --init --configdir $config_dir -v --no-cleanup-after
+		$MOCK_BIN --init --configdir $config_dir -v --no-cleanup-after
 #	    fi
 
 	    OUTPUT_FOLDER="$build_package"
 	fi
 
-	echo '--> Checking if rpm packages can be installed.' >> $test_log
+	echo '--> Checking if rpm packages can be installed.' >> "${test_log}"
 	TEST_CHROOT_PATH=$($MOCK_BIN --configdir=$config_dir --print-root-path)
 	sudo mkdir -p "${TEST_CHROOT_PATH}"/test_root
 	sudo cp "${OUTPUT_FOLDER}"/*.rpm "${TEST_CHROOT_PATH}"/
@@ -244,35 +243,35 @@ test_rpm() {
 	retry=0
 	while $try_retest
 	do
-	    sudo chroot "${TEST_CHROOT_PATH}" urpmi --split-length 0 --downloader wget --wget-options --auth-no-challenge -v --debug --no-verify-rpm --fastunsafe --no-suggests --buildrequires --test `ls  $TEST_CHROOT_PATH | grep rpm` --root test_root --auto > $test_log.tmp 2>&1
+	    sudo chroot "${TEST_CHROOT_PATH}" urpmi --split-length 0 --downloader wget --wget-options --auth-no-challenge -v --debug --no-verify-rpm --fastunsafe --no-suggests --buildrequires --test "$(ls  "${TEST_CHROOT_PATH}" | grep rpm)"  --root test_root --auto > "${test_log}".tmp 2>&1
 	    test_code=$?
 	    try_retest=false
 	    if [[ $test_code != 0 && $retry < $MAX_RETRIES ]] ; then
 		if grep -q "$RETRY_GREP_STR" $test_log.tmp; then
-		    echo '--> Repository was changed in the middle, will rerun the tests' >> $test_log
+		    echo '--> Repository was changed in the middle, will rerun the tests' >> "${test_log}"
 		    sleep ${WAIT_TIME}
-		    sudo chroot "${TEST_CHROOT_PATH}" urpmi.update -a >> $test_log 2>&1
+		    sudo chroot "${TEST_CHROOT_PATH}" urpmi.update -a >> "${test_log}" 2>&1
 		    try_retest=true
 		    (( retry=$retry+1 ))
 		fi
 	    fi
 	done
 
-	cat $test_log.tmp >> $test_log
-	echo "--> Tests finished at `date -u`" >> $test_log
-	echo 'Test code output: ' $test_code >> $test_log 2>&1
+	cat "${test_log}".tmp >> "${test_log}"
+	echo "--> Tests finished at $(date -u)" >> "${test_log}"
+	echo 'Test code output: ' "${test_code}" >> "${test_log}" 2>&1
 	sudo rm -f  "${TEST_CHROOT_PATH}"/*.rpm
 	sudo rm -rf "${TEST_CHROOT_PATH}"/test_root
-	rm -f $test_log.tmp
+	rm -f $"${test_log}".tmp
 
 	# Check exit code after testing
-	if [ $test_code != 0 ]; then
+	if [ "${test_code}" != 0 ]; then
 	    echo '--> Test failed, see: tests.log'
 	    test_code=5
-	    [ "$rerun_tests" = 'true' ] && cleanup
-	    exit $test_code
+	    [ "${rerun_tests}" = 'true' ] && cleanup
+	    exit "${test_code}"
 	else
-	    return $test_code
+	    return "${test_code}"
 	fi
 }
 
@@ -464,7 +463,7 @@ do
     if [ ! -z "${project_version}" ]; then
 # (tpg) clone only history of 100 commits to reduce bandwith
 	git clone --depth 100 -b "${project_version}" "${git_repo}" "${HOME}"/"${PACKAGE}"
-	cd "${HOME}"/"${PACKAGE}"
+	cd "${HOME}"/"${PACKAGE}" || exit 1
 	git rev-parse HEAD > "${HOME}"/commit_hash
 	cd ..
     else
@@ -481,7 +480,7 @@ do
     fi
 done
 
-cd "${HOME}"/"${PACKAGE}"
+cd "${HOME}"/"${PACKAGE}" || exit 1
 # count number of specs (should be 1)
 find_spec
 # check for excludearch or exclusivearch
