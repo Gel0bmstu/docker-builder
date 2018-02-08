@@ -85,7 +85,7 @@ container_data() {
 
 [ "${rerun_tests}" = 'true' ] && return 0
 
-c_data=$OUTPUT_FOLDER/container_data.json
+c_data="${OUTPUT_FOLDER}"/container_data.json
 project_name="$(echo ${git_repo} | sed s%.*/%% | sed s/.git$//)"
 echo '[' > ${c_data}
 comma=0
@@ -107,7 +107,7 @@ for rpm in "${OUTPUT_FOLDER}"/*.rpm; do
 	release=${nevr[3]}
 
 	dep_list=""
-	[[ ! "${fullname}" =~ ".*src.rpm$" ]] && dep_list=`urpmq --whatrequires ${name} | sort -u | xargs urpmq --sourcerpm | cut -d\  -f2 | rev | cut -f3- -d- | rev | sort -u | grep -v "^${project_name}$" | xargs echo`
+	[[ ! "${fullname}" =~ .*src.rpm$ ]] && dep_list=`urpmq --whatrequires ${name} | sort -u | xargs urpmq --sourcerpm | cut -d\  -f2 | rev | cut -f3- -d- | rev | sort -u | grep -v "^${project_name}$" | xargs echo`
 	sha1="$(sha1sum ${rpm} | awk '{ print $1 }')"
 
 	echo "--> dep_list for '${name}':"
@@ -133,7 +133,7 @@ download_cache() {
 if [ "${CACHED_CHROOT_SHA1}" != '' ]; then
 # if chroot not exist download it
     if [ ! -f "${HOME}"/"${CACHED_CHROOT_SHA1}".tar.xz ]; then
-	curl -L "${filestore_url}"/"${CACHED_CHROOT_SHA1}" -o "${HOME}"/"${CACHED_CHROOT_SHA1}.tar.xz"
+	curl -L "${filestore_url}"/"${CACHED_CHROOT_SHA1}" -o "${HOME}"/"${CACHED_CHROOT_SHA1}".tar.xz
     fi
 # unpack in root
     printf '%s\n' "Extracting chroot $CACHED_CHROOT_SHA1"
@@ -205,10 +205,10 @@ test_rpm() {
     if [ "$rerun_tests" = 'true' ]; then
 	[ "$packages" = '' ] && printf '%s\n' '--> No packages for testing. Something is wrong. Exiting. !!!' && exit 1
 
-	[ ! -e "$OUTPUT_FOLDER" ] && mkdir -p "${OUTPUT_FOLDER}"
+	[ ! -e "${OUTPUT_FOLDER}" ] && mkdir -p "${OUTPUT_FOLDER}"
 	[ ! -e "$build_package" ] && mkdir -p "$build_package"
 
-	test_log="$OUTPUT_FOLDER"/tests-`printf '%(%F-%R)T'.log`
+	test_log="${OUTPUT_FOLDER}"/tests-"$(printf '%(%F-%R)T')".log
 	printf '%s\n' "--> Re-running tests on `date -u`" >> $test_log
 	prefix='rerun-tests-'
 	arr=($packages)
@@ -238,7 +238,7 @@ test_rpm() {
 	echo '--> Checking if rpm packages can be installed.' >> $test_log
 	TEST_CHROOT_PATH=$($MOCK_BIN --configdir=$config_dir --print-root-path)
 	sudo mkdir -p "${TEST_CHROOT_PATH}"/test_root
-	sudo cp "$OUTPUT_FOLDER"/*.rpm "${TEST_CHROOT_PATH}"/
+	sudo cp "${OUTPUT_FOLDER}"/*.rpm "${TEST_CHROOT_PATH}"/
 
 	try_retest=true
 	retry=0
@@ -296,20 +296,20 @@ try_rebuild=true
 retry=0
 while $try_rebuild
 do
-    rm -rf "$OUTPUT_FOLDER"
+    rm -rf "${OUTPUT_FOLDER}"
     if [ "${CACHED_CHROOT_SHA1}" != '' ]; then
 	echo "--> Uses cached chroot with sha1 '$CACHED_CHROOT_SHA1'..."
 	$MOCK_BIN --chroot "urpmi.removemedia -a"
 	$MOCK_BIN --readdrepo -v --configdir $config_dir
-	$MOCK_BIN -v --configdir=$config_dir --buildsrpm --spec=$build_package/${PACKAGE}.spec --sources=$build_package --no-cleanup-after --no-clean $extra_build_src_rpm_options --resultdir=$OUTPUT_FOLDER
+	$MOCK_BIN -v --configdir=$config_dir --buildsrpm --spec=$build_package/${PACKAGE}.spec --sources=$build_package --no-cleanup-after --no-clean $extra_build_src_rpm_options --resultdir="${OUTPUT_FOLDER}"
     else
-	$MOCK_BIN -v --configdir=$config_dir --buildsrpm --spec=$build_package/${PACKAGE}.spec --sources=$build_package --no-cleanup-after $extra_build_src_rpm_options --resultdir=$OUTPUT_FOLDER
+	$MOCK_BIN -v --configdir=$config_dir --buildsrpm --spec=$build_package/${PACKAGE}.spec --sources=$build_package --no-cleanup-after $extra_build_src_rpm_options --resultdir="${OUTPUT_FOLDER}"
     fi
 
     rc=${PIPESTATUS[0]}
     try_rebuild=false
     if [[ $rc != 0 && $retry < $MAX_RETRIES ]]; then
-	if grep -q "$RETRY_GREP_STR" $OUTPUT_FOLDER/root.log; then
+	if grep -q "$RETRY_GREP_STR" "${OUTPUT_FOLDER}"/root.log; then
 	    try_rebuild=true
 	    (( retry=$retry+1 ))
 	    echo "--> Repository was changed in the middle, will rerun the build. Next try (${retry} from ${MAX_RETRIES})..."
@@ -320,11 +320,11 @@ do
 done
 
 # Check exit code after build
-if [ $rc != 0 ] || [ ! -e $OUTPUT_FOLDER/*.src.rpm ]; then
+if [ $rc != 0 ] || [ ! -e "${OUTPUT_FOLDER}"/*.src.rpm ]; then
     printf '%s\n' '--> Build failed: mock-urpm encountered a problem.'
     # 99% of all build failures at src.rpm creation is broken deps
     # m1 show only first match -oP show only matching
-    grep -m1 -oP "\(due to unsatisfied(.*)$" $OUTPUT_FOLDER/root.log >> ~/build_fail_reason.log
+    grep -m1 -oP "\(due to unsatisfied(.*)$" "${OUTPUT_FOLDER}"/root.log >> ~/build_fail_reason.log
     [ -n $subshellpid ] && kill $subshellpid
     cleanup
     exit 1
@@ -337,11 +337,11 @@ try_rebuild=true
 retry=0
 while $try_rebuild
 do
-    $MOCK_BIN -v --configdir=$config_dir --rebuild $OUTPUT_FOLDER/*.src.rpm --no-cleanup-after --no-clean $extra_build_rpm_options --resultdir=$OUTPUT_FOLDER
+    $MOCK_BIN -v --configdir=$config_dir --rebuild "${OUTPUT_FOLDER}"/*.src.rpm --no-cleanup-after --no-clean $extra_build_rpm_options --resultdir="${OUTPUT_FOLDER}"
     rc=${PIPESTATUS[0]}
     try_rebuild=false
     if [[ $rc != 0 && $retry < $MAX_RETRIES ]] ; then
-	if grep -q "$RETRY_GREP_STR" $OUTPUT_FOLDER/root.log; then
+	if grep -q "$RETRY_GREP_STR" "${OUTPUT_FOLDER}"/root.log; then
 	    try_rebuild=true
 	    (( retry=$retry+1 ))
 	    echo "--> Repository was changed in the middle, will rerun the build. Next try (${retry} from ${MAX_RETRIES})..."
@@ -355,8 +355,8 @@ done
 if [ "${rc}" != 0 ]; then
     printf '%s\n' '--> Build failed: mock-urpm encountered a problem.'
 # clean all the rpm files because build was not completed
-    grep -m1 -i -oP "$GREP_PATTERN" $OUTPUT_FOLDER/root.log >> ~/build_fail_reason.log
-    rm -rf $OUTPUT_FOLDER/*.rpm
+    grep -m1 -i -oP "$GREP_PATTERN" "${OUTPUT_FOLDER}"/root.log >> ~/build_fail_reason.log
+    rm -rf "${OUTPUT_FOLDER}"/*.rpm
     [ -n $subshellpid ] && kill $subshellpid
     cleanup
     exit 1
@@ -364,10 +364,10 @@ fi
 printf '%s\n' '--> Done.'
 
 # Extract rpmlint logs into separate file
-echo "--> Grepping rpmlint logs from $OUTPUT_FOLDER/build.log to $OUTPUT_FOLDER/rpmlint.log"
-sed -n "/Executing \"\/usr\/bin\/rpmlint/,/packages and.*specfiles checked/p" $OUTPUT_FOLDER/build.log > $OUTPUT_FOLDER/rpmlint.log
+echo "--> Grepping rpmlint logs from ${OUTPUT_FOLDER}/build.log to ${OUTPUT_FOLDER}/rpmlint.log"
+sed -n "/Executing \"\/usr\/bin\/rpmlint/,/packages and.*specfiles checked/p" "${OUTPUT_FOLDER}"/build.log > "${OUTPUT_FOLDER}"/rpmlint.log
 printf '%s\n' '--> Create rpm -qa list'
-rpm --root=/var/lib/mock-urpm/openmandriva-$platform_arch/root/ -qa >> $OUTPUT_FOLDER/rpm-qa.log
+rpm --root=/var/lib/mock-urpm/openmandriva-$platform_arch/root/ -qa >> "${OUTPUT_FOLDER}"/rpm-qa.log
 
 # (tpg) Save build chroot
 if [ "${rc}" != 0 ] && [ "${save_buildroot}" = 'true' ]; then
