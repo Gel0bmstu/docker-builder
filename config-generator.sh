@@ -1,30 +1,29 @@
 #!/bin/bash
-echo 'OpenMandriva platform config generator'
+printf '%s\n' 'OpenMandriva platform config generator'
 
-extra_cfg_options="$EXTRA_CFG_OPTIONS"
-extra_cfg_urpm_options="$EXTRA_CFG_URPM_OPTIONS"
-uname="$UNAME"
-email="$EMAIL"
-platform_arch="$PLATFORM_ARCH"
+extra_cfg_options="${EXTRA_CFG_OPTIONS}"
+extra_cfg_urpm_options="${EXTRA_CFG_URPM_OPTIONS}"
+uname="${UNAME}"
+email="${EMAIL}"
+platform_arch="${PLATFORM_ARCH}"
 platform_name=${PLATFORM_NAME:-"openmandriva"}
-repo_url="$REPO_URL"
-repo_names="$REPO_NAMES"
+repo_url="${REPO_URL}"
+repo_names="${REPO_NAMES}"
 
 default_cfg=/etc/mock-urpm/default.cfg
+
 gen_included_repos() {
+    names_arr=($repo_names)
+    urls_arr=($repo_url)
 
-names_arr=($repo_names)
-urls_arr=($repo_url)
-
-for (( i=0; i<${#names_arr[@]}; i++ ));
-do
+    for (( i=0; i<${#names_arr[@]}; i++ )); do
 	echo '"'${names_arr[i]}'"': '"'${urls_arr[i]}'"', >> $default_cfg
-done
-# close urpmi repos section
-echo '}' >> $default_cfg
+    done
+    # close urpmi repos section
+    echo '}' >> $default_cfg
 }
 
-if [ "$platform_arch" == 'aarch64' ] ; then
+if [ "${platform_arch}" = 'aarch64' ]; then
 cat <<EOF> $default_cfg
 config_opts['target_arch'] = '$platform_arch --without check --without uclibc --without dietlibc'
 config_opts['legal_host_arches'] = ('i586', 'i686', 'x86_64', 'aarch64')
@@ -32,7 +31,7 @@ config_opts['urpmi_options'] = '--no-suggests --no-verify-rpm --ignoresize --ign
 config_opts['urpm_options'] = '--xml-info=never $extra_cfg_urpm_options'
 EOF
 
-elif [ "$platform_arch" == 'armv7hl' ] ; then
+elif [ "${platform_arch}" = 'armv7hl' ]; then
 cat <<EOF> $default_cfg
 config_opts['target_arch'] = '$platform_arch --without check --without uclibc'
 config_opts['legal_host_arches'] = ('i586', 'i686', 'x86_64', 'armv7hl', 'armv7l', 'aarch64')
