@@ -116,9 +116,7 @@ for arch in ${arches} ; do
 	exit 1
     fi
 
-    chroot="$(ls -1 "${chroot_path}" | grep "${arch}" | head -1)"
-
-    if [ "${chroot}" = '' ]; then
+    if [ ! -e "${chroot_path}"/"${platform_name}"-"${arch}"/root/etc/os-release ]; then
 	printf '%s\n' '--> Build failed: chroot does not exist.'
 	cleanup
 	exit 1
