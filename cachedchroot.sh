@@ -140,7 +140,7 @@ for arch in ${arches} ; do
 	cleanup
 	exit 1
     fi
-    sudo rm -rf "${chroot_path}"/"${chroot}"
+    sudo rm -rf "${chroot_path}"/"${platform_name}"-"${arch}"
 done
 
 printf '%s\n' '--> Build has been done successfully!'
