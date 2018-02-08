@@ -487,7 +487,7 @@ find_spec
 # check for excludearch or exclusivearch
 validate_arch
 # download sources from .abf.yml
-/bin/bash /mdv/download_sources.sh
+/bin/sh /mdv/download_sources.sh
 popd
 
 # build package
