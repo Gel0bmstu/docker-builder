@@ -2,7 +2,7 @@
 set -x
 
 cleanup() {
-echo '--> Cleaning up...'
+printf '%s\n' '--> Cleaning up...'
 sudo rm -fv /etc/rpm/platform
 rm -fv /etc/mock-urpm/default.cfg
 sudo rm -rf /var/lib/mock-urpm/*
@@ -12,11 +12,11 @@ sudo rm -rf /var/lib/mock-urpm/*
 #rm -fv ~/build_fail_reason.log
 
 # (tpg) remove package
-rm -rf "${HOME}/${PACKAGE}"
+rm -rf "${HOME}"/"${PACKAGE}"
 # (tpg) remove old files
 # in many cases these are leftovers when build fails
 # would be nice to remove them to free disk space
-find ${HOME} -maxdepth 1 ! -name 'qemu-a*' ! -name 'docker-worker' ! -name '.gem' ! -name 'envfile' -mmin +1500 -exec rm -rf '{}' \;  &> /dev/null
+find "${HOME}" -maxdepth 1 ! -name 'qemu-a*' ! -name 'docker-worker' ! -name '.gem' ! -name 'envfile' -mmin +1500 -exec rm -rf '{}' \;  &> /dev/null
 }
 
 # (tpg) Clean build environment
@@ -30,8 +30,8 @@ MOCK_BIN="/usr/bin/mock-urpm"
 config_dir=/etc/mock-urpm/
 # $PACKAGE same as project name
 # e.g. github.com/OpenMandrivaAssociation/htop
-build_package=${HOME}/"$PACKAGE"
-OUTPUT_FOLDER=${HOME}/output
+build_package="${HOME}"/"$PACKAGE"
+OUTPUT_FOLDER="${HOME}"/output
 # Qemu ARM binaries
 QEMU_ARM_SHA="9c7e32080fab6751a773f363bfebab8ac8cb9f4a"
 QEMU_ARM_BINFMT_SHA="10131ee0db7a486186c32e0cb7229f4368d0d28b"
@@ -57,42 +57,42 @@ rerun_tests="$RERUN_TESTS"
 # list of packages for tests relaunch
 packages="$PACKAGES"
 
-if [ "`uname -m`" = "x86_64" ] && echo "$platform_arch" |grep -qE 'i[0-9]86'; then
+if [ "$(uname -m)" = 'x86_64' ] && echo "${platform_arch}" |grep -qE 'i[0-9]86'; then
     # Change the kernel personality so build scripts don't think
     # we're building for 64-bit
     MOCK_BIN="/usr/bin/i386 $MOCK_BIN"
 fi
 
-echo '--> Mounting tmpfs filesystem to builddir'
+printf '%s\n' '--> Mounting tmpfs filesystem to builddir.'
 sudo mount -a
 
 generate_config() {
 # Change output format for mock-urpm
-sed '17c/format: %(message)s' $config_dir/logging.ini > ~/logging.ini
-mv -f ~/logging.ini $config_dir/logging.ini
+sed '17c/format: %(message)s' "${config_dir}"/logging.ini > ~/logging.ini
+mv -f ~/logging.ini "${config_dir}"/logging.ini
 
-EXTRA_CFG_OPTIONS="$extra_cfg_options" \
-  EXTRA_CFG_URPM_OPTIONS="$extra_cfg_urpm_options" \
-  UNAME=$uname \
-  EMAIL=$email \
-  PLATFORM_NAME=$platform_name \
-  PLATFORM_ARCH=$platform_arch \
-  /bin/bash "/mdv/config-generator.sh"
+EXTRA_CFG_OPTIONS="${extra_cfg_options}" \
+  EXTRA_CFG_URPM_OPTIONS="${extra_cfg_urpm_options}" \
+  UNAME="${uname}" \
+  EMAIL="${email}" \
+  PLATFORM_NAME="${platform_name}" \
+  PLATFORM_ARCH="${platform_arch}" \
+  /bin/sh "/mdv/config-generator.sh"
 }
 
 container_data() {
 # Generate data for container
 
-[ "$rerun_tests" = 'true' ] && return 0
+[ "${rerun_tests}" = 'true' ] && return 0
 
 c_data=$OUTPUT_FOLDER/container_data.json
-project_name=`echo ${git_repo} | sed s%.*/%% | sed s/.git$//`
+project_name="$(echo ${git_repo} | sed s%.*/%% | sed s/.git$//)"
 echo '[' > ${c_data}
 comma=0
-for rpm in ${OUTPUT_FOLDER}/*.rpm; do
-    nevr=(`rpm -qp --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE}" ${rpm}`)
+for rpm in "${OUTPUT_FOLDER}"/*.rpm; do
+    nevr="$(rpm -qp --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE}" "${rpm}")"
     name=${nevr[0]}
-    if [ "${name}" != '' ] ; then
+    if [ "${name}" != '' ]; then
 	if [ $comma -eq 1 ]
 	then
 		echo -n "," >> ${c_data}
@@ -101,14 +101,14 @@ for rpm in ${OUTPUT_FOLDER}/*.rpm; do
 	then
 		comma=1
 	fi
-	fullname=`basename $rpm`
+	fullname="$(basename "${rpm}")"
 	epoch=${nevr[1]}
 	version=${nevr[2]}
 	release=${nevr[3]}
 
 	dep_list=""
 	[[ ! "${fullname}" =~ ".*src.rpm$" ]] && dep_list=`urpmq --whatrequires ${name} | sort -u | xargs urpmq --sourcerpm | cut -d\  -f2 | rev | cut -f3- -d- | rev | sort -u | grep -v "^${project_name}$" | xargs echo`
-	sha1=`sha1sum ${rpm} | awk '{ print $1 }'`
+	sha1="$(sha1sum ${rpm} | awk '{ print $1 }')"
 
 	echo "--> dep_list for '${name}':"
 	echo ${dep_list}
@@ -132,15 +132,15 @@ download_cache() {
 
 if [ "${CACHED_CHROOT_SHA1}" != '' ]; then
 # if chroot not exist download it
-    if [ ! -f ${HOME}/${CACHED_CHROOT_SHA1}.tar.xz ]; then
-	curl -L "${filestore_url}/${CACHED_CHROOT_SHA1}" -o "${HOME}/${CACHED_CHROOT_SHA1}.tar.xz"
+    if [ ! -f "${HOME}"/"${CACHED_CHROOT_SHA1}".tar.xz ]; then
+	curl -L "${filestore_url}"/"${CACHED_CHROOT_SHA1}" -o "${HOME}"/"${CACHED_CHROOT_SHA1}.tar.xz"
     fi
 # unpack in root
-    echo "Extracting chroot $CACHED_CHROOT_SHA1"
-    if echo "${CACHED_CHROOT_SHA1} ${HOME}/${CACHED_CHROOT_SHA1}.tar.xz" | sha1sum -c --status &> /dev/null; then
-	sudo tar -xf ${HOME}/${CACHED_CHROOT_SHA1}.tar.xz -C /
+    printf '%s\n' "Extracting chroot $CACHED_CHROOT_SHA1"
+    if echo "${CACHED_CHROOT_SHA1}" "${HOME}"/"${CACHED_CHROOT_SHA1}".tar.xz | sha1sum -c --status &> /dev/null; then
+	sudo tar -xf "${HOME}"/"${CACHED_CHROOT_SHA1}".tar.xz -C /
     else
-	echo '--> Building without cached chroot, becasue SHA1 is wrong.'
+	printf '%s\n' '--> Building without cached chroot, becasue SHA1 is wrong.'
 	export CACHED_CHROOT_SHA1=""
     fi
 fi
@@ -150,8 +150,8 @@ fi
 arm_platform_detector(){
 probe_cpu() {
 # probe cpu type
-cpu=`uname -m`
-case "$cpu" in
+cpu="$(uname -m)"
+case "${cpu}" in
    i386|i486|i586|i686|i86pc|BePC|x86_64)
       cpu="i386"
    ;;
@@ -163,25 +163,25 @@ case "$cpu" in
    ;;
 esac
 
-if [ "$platform_arch" = 'aarch64' ]; then
-    if [ $cpu != "aarch64" ] ; then
+if [ "${platform_arch}" = 'aarch64' ]; then
+    if [ ${cpu} != 'aarch64' ] ; then
 # hack to copy qemu binary in non-existing path
-	(while [ ! -e  /var/lib/mock-urpm/openmandriva-$platform_arch/root/usr/bin/ ]
+	(while [ ! -e  /var/lib/mock-urpm/openmandriva-"${platform_arch}"/root/usr/bin/ ]
 	do sleep 1; done
 	# rebuild docker builder with qemu packages
-	sudo cp /usr/bin/qemu-static-aarch64 /var/lib/mock-urpm/openmandriva-$platform_arch/root/usr/bin/) &
+	sudo cp /usr/bin/qemu-static-aarch64 /var/lib/mock-urpm/openmandriva-"${platform_arch}"/root/usr/bin/) &
 	subshellpid=$!
     fi
 # remove me in future
     sudo sh -c "echo '$platform_arch-mandriva-linux-gnueabi' > /etc/rpm/platform"
 fi
 
-if [ "$platform_arch" = 'armv7hl' ]; then
-    if [ $cpu != "arm" ] || [ $cpu != "aarch64" ] ; then
+if [ "${platform_arch}" = 'armv7hl' ]; then
+    if [ "${cpu}" != 'arm' ] || [ "${cpu}" != 'aarch64' ] ; then
 # hack to copy qemu binary in non-existing path
-	(while [ ! -e  /var/lib/mock-urpm/openmandriva-$platform_arch/root/usr/bin/ ]
+	(while [ ! -e  /var/lib/mock-urpm/openmandriva-"${platform_arch}"/root/usr/bin/ ]
 	do sleep 1; done
-	sudo cp /usr/bin/qemu-static-arm /var/lib/mock-urpm/openmandriva-$platform_arch/root/usr/bin/) &
+	sudo cp /usr/bin/qemu-static-arm /var/lib/mock-urpm/openmandriva-"${platform_arch}"/root/usr/bin/) &
 	subshellpid=$!
     fi
 # remove me in future
@@ -199,17 +199,17 @@ test_rpm() {
     use_extra_tests=$use_extra_tests
 
     test_code=0
-    test_log="$OUTPUT_FOLDER"/tests.log
-    echo '--> Starting RPM tests.'
+    test_log="${OUTPUT_FOLDER}"/tests.log
+    printf '%s\n' '--> Starting RPM tests.'
 
     if [ "$rerun_tests" = 'true' ]; then
-	[ "$packages" = '' ] && echo '--> No packages for testing. Something is wrong. Exiting. !!!' && exit 1
+	[ "$packages" = '' ] && printf '%s\n' '--> No packages for testing. Something is wrong. Exiting. !!!' && exit 1
 
-	[ ! -e "$OUTPUT_FOLDER" ] && mkdir -p "$OUTPUT_FOLDER"
+	[ ! -e "$OUTPUT_FOLDER" ] && mkdir -p "${OUTPUT_FOLDER}"
 	[ ! -e "$build_package" ] && mkdir -p "$build_package"
 
 	test_log="$OUTPUT_FOLDER"/tests-`printf '%(%F-%R)T'.log`
-	echo "--> Re-running tests on `date -u`" >> $test_log
+	printf '%s\n' "--> Re-running tests on `date -u`" >> $test_log
 	prefix='rerun-tests-'
 	arr=($packages)
 	cd "$build_package"
@@ -279,7 +279,7 @@ test_rpm() {
 build_rpm() {
 arm_platform_detector
 
-if [ "$rerun_tests" = 'true' ]; then
+if [ "${rerun_tests}" = 'true' ]; then
     test_rpm
     return 0
 fi
@@ -291,7 +291,7 @@ MAX_RETRIES=10
 WAIT_TIME=60
 RETRY_GREP_STR="You may need to update your urpmi database\|problem reading synthesis file of medium\|retrieving failed: "
 
-echo '--> Build src.rpm'
+printf '%s\n' '--> Build src.rpm'
 try_rebuild=true
 retry=0
 while $try_rebuild
@@ -321,7 +321,7 @@ done
 
 # Check exit code after build
 if [ $rc != 0 ] || [ ! -e $OUTPUT_FOLDER/*.src.rpm ]; then
-    echo '--> Build failed: mock-urpm encountered a problem.'
+    printf '%s\n' '--> Build failed: mock-urpm encountered a problem.'
     # 99% of all build failures at src.rpm creation is broken deps
     # m1 show only first match -oP show only matching
     grep -m1 -oP "\(due to unsatisfied(.*)$" $OUTPUT_FOLDER/root.log >> ~/build_fail_reason.log
@@ -330,9 +330,9 @@ if [ $rc != 0 ] || [ ! -e $OUTPUT_FOLDER/*.src.rpm ]; then
     exit 1
 fi
 
-echo '--> src.rpm build has been done successfully.'
+printf '%s\n' '--> src.rpm build has been done successfully.'
 
-echo '--> Building rpm'
+printf '%s\n' '--> Building rpm.'
 try_rebuild=true
 retry=0
 while $try_rebuild
@@ -352,8 +352,8 @@ do
 done
 
 # Check exit code after build
-if [ $rc != 0 ]; then
-    echo '--> Build failed: mock-urpm encountered a problem.'
+if [ "${rc}" != 0 ]; then
+    printf '%s\n' '--> Build failed: mock-urpm encountered a problem.'
 # clean all the rpm files because build was not completed
     grep -m1 -i -oP "$GREP_PATTERN" $OUTPUT_FOLDER/root.log >> ~/build_fail_reason.log
     rm -rf $OUTPUT_FOLDER/*.rpm
@@ -361,12 +361,12 @@ if [ $rc != 0 ]; then
     cleanup
     exit 1
 fi
-echo '--> Done.'
+printf '%s\n' '--> Done.'
 
 # Extract rpmlint logs into separate file
 echo "--> Grepping rpmlint logs from $OUTPUT_FOLDER/build.log to $OUTPUT_FOLDER/rpmlint.log"
 sed -n "/Executing \"\/usr\/bin\/rpmlint/,/packages and.*specfiles checked/p" $OUTPUT_FOLDER/build.log > $OUTPUT_FOLDER/rpmlint.log
-echo '--> Create rpm -qa list'
+printf '%s\n' '--> Create rpm -qa list'
 rpm --root=/var/lib/mock-urpm/openmandriva-$platform_arch/root/ -qa >> $OUTPUT_FOLDER/rpm-qa.log
 
 # (tpg) Save build chroot
@@ -382,16 +382,16 @@ test_rpm
 
 find_spec() {
 
-[ "$rerun_tests" = 'true' ] && return 0
+[ "${rerun_tests}" = 'true' ] && return 0
 
 # Check count of *.spec files (should be one)
-x=$(ls -1 | grep -c '.spec$' | sed 's/^ *//' | sed 's/ *$//')
+x="$(ls -1 | grep -c '.spec$' | sed 's/^ *//' | sed 's/ *$//')"
 if [ "$x" -eq "0" ] ; then
-    echo '--> There are no spec files in repository.'
+    printf '%s\n' '--> There are no spec files in repository.'
     exit 1
 else
     if [ "$x" -ne "1" ] ; then
-	echo '--> There are more than one spec file in repository.'
+	printf '%s\n' '--> There are more than one spec file in repository.'
 	exit 1
     fi
 fi
@@ -451,7 +451,7 @@ validate_arch() {
 
 clone_repo() {
 
-[ "$rerun_tests" = 'true' ] && return 0
+[ "${rerun_tests}" = 'true' ] && return 0
 
 MAX_RETRIES=5
 WAIT_TIME=60
@@ -459,20 +459,20 @@ try_reclone=true
 retry=0
 while $try_reclone
 do
-    rm -rf ${HOME}/${PACKAGE}
+    rm -rf "${HOME}"/"${PACKAGE}"
 # checkout specific branch/tag if defined
-    if [ ! -z "$project_version" ]; then
+    if [ ! -z "${project_version}" ]; then
 # (tpg) clone only history of 100 commits to reduce bandwith
-	git clone --depth 100 -b $project_version $git_repo ${HOME}/${PACKAGE}
-	pushd ${HOME}/${PACKAGE}
-	git rev-parse HEAD > ${HOME}/commit_hash
-	popd
+	git clone --depth 100 -b "${project_version}" "${git_repo}" "${HOME}"/"${PACKAGE}"
+	cd "${HOME}"/"${PACKAGE}"
+	git rev-parse HEAD > "${HOME}"/commit_hash
+	cd ..
     else
-	git clone --depth 100 $git_repo ${HOME}/${PACKAGE}
+	git clone --depth 100 "${git_repo}" "${HOME}"/"${PACKAGE}"
     fi
     rc=$?
     try_reclone=false
-    if [[ $rc != 0 && $retry < $MAX_RETRIES ]] ; then
+    if [[ "${rc}" != 0 && $retry < $MAX_RETRIES ]] ; then
 	try_reclone=true
 	(( retry=$retry+1 ))
 	echo "--> Something wrong with git repository, next try (${retry} from ${MAX_RETRIES})..."
@@ -481,14 +481,14 @@ do
     fi
 done
 
-pushd ${HOME}/${PACKAGE}
+cd "${HOME}"/"${PACKAGE}"
 # count number of specs (should be 1)
 find_spec
 # check for excludearch or exclusivearch
 validate_arch
 # download sources from .abf.yml
 /bin/sh /mdv/download_sources.sh
-popd
+cd ..
 
 # build package
 }
@@ -499,4 +499,4 @@ download_cache
 build_rpm
 container_data
 # wipe package
-rm -rf ${HOME}/${PACKAGE}
+rm -rf "${HOME}"/"${PACKAGE}"
