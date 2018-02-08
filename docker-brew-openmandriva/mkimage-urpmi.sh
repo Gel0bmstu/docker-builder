@@ -45,7 +45,7 @@ errorCatch() {
 
 trap errorCatch ERR SIGHUP SIGINT SIGTERM
 
-if [ -z ${installversion} ]; then
+if [ -z "${installversion}" ]; then
 # Attempt to match host version
     if [ -r /etc/distro-release ]; then
 	installversion="$(rpm --eval %distro_release)"
@@ -55,7 +55,7 @@ if [ -z ${installversion} ]; then
     fi
 fi
 
-if [ -z $mirror ]; then
+if [ -z "${mirror}" ]; then
 # No repo provided, use main
     mirror=http://abf-downloads.openmandriva.org/"${installversion}"/repository/"${arch}"/main/release/
     update_mirror=http://abf-downloads.openmandriva.org/"${installversion}"/repository/"${arch}"/main/updates/
@@ -66,8 +66,8 @@ fi
 install_chroot(){
     urpmi.addmedia main_release "${mirror}" --urpmi-root "${target_dir}";
 
-    if [ ! -z $updates ]; then
-	urpmi.addmedia main_updates $update_mirror --urpmi-root "${target_dir}";
+    if [ ! -z "${updates}" ]; then
+	urpmi.addmedia main_updates "${update_mirror}" --urpmi-root "${target_dir}";
     fi
     urpmi basesystem-minimal passwd urpmi distro-release-OpenMandriva locales locales-en "${systemd}" \
 	--auto \
@@ -123,14 +123,14 @@ probe_cpu
 arm_platform_detector
 install_chroot
 
-if [ ! -z ${systemd} ]; then
+if [ ! -z "${systemd}" ]; then
     printf '%b\n' '--------------------------------------'
     printf '%b\n' 'Creating image with systemd support.'
     printf '%b\n' '--------------------------------------'
     systemd="systemd"
 fi
 
-if [ ! -z ${systemd} ]; then
+if [ ! -z "${systemd}" ]; then
 # Prevent systemd from starting unneeded services
     (cd "${target_dir}"/lib/systemd/system/sysinit.target.wants/; for i in *; do [ "$i" = 'systemd-tmpfiles-setup.service' ] || rm -f $i; done); \
 	rm -f "${target_dir}"/lib/systemd/system/multi-user.target.wants/*;\
@@ -154,7 +154,7 @@ nameserver 8.8.8.8
 nameserver 8.8.4.4
 EOF
 
-if [ ! -z "{$without_user}" ]; then
+if [ ! -z "${$without_user}" ]; then
 	# Create user omv, password omv
 	echo 'omv:x:1001:1001::/home/omv:/bin/bash' >>"${target_dir}"/etc/passwd
 	echo 'omv:$6$rG3bQ92hkTNubV1p$5qPB9FoXBhNcSE1FOklCoEDowveAgjSf2cHYVwCENZaWtgpFQaRRRN5Ihwd8nuaKMdA1R1XouOasJ7u5dbiGt0:17302:0:99999:7:::' >> "${target_dir}"/etc/shadow
@@ -174,10 +174,10 @@ You must change it!
 EOF
 fi
 
-if [ ! -z ${systemd} ]; then
-    tarFile="${rootfsdir}"/rootfs-"${arch}"-systemd.tar.xz"
+if [ ! -z "${systemd}" ]; then
+    tarFile="${rootfsdir}"/rootfs-"${arch}"-systemd.tar.xz
 else
-    tarFile="${rootfsdir}"/rootfs-"${arch}".tar.xz"
+    tarFile="${rootfsdir}"/rootfs-"${arch}".tar.xz
 fi
 
 cd "${target_dir}"
