@@ -1,6 +1,6 @@
 #!/bin/sh
 set -x
-printf '%s\n' '--> docker-builder/cachedchroot.sh'
+printf '%s\\n' '--> docker-builder/cachedchroot.sh'
 
 MOCK_BIN=/usr/bin/mock-urpm
 config_dir=/etc/mock-urpm/
@@ -23,7 +23,7 @@ cleanup() {
 # wipe all
 cleanup
 
-if [ $(uname -m) = 'x86_64' ] && printf '%s\n' "${platform_arch}" |grep -qE 'i[0-9]86'; then
+if [ "$(uname -m)" = 'x86_64' ] && printf '%s\n' "${platform_arch}" |grep -qE 'i[0-9]86'; then
     # Change the kernel personality so build scripts don't think
     # we're building for 64-bit
     MOCK_BIN="/usr/bin/i386 ${MOCK_BIN}"
@@ -34,7 +34,7 @@ generate_config() {
 sed '17c/format: %(message)s' "${config_dir}"/logging.ini > ~/logging.ini
 mv -f ~/logging.ini "${config_dir}"/logging.ini
 
-if [ $(printf '%s\n' "${distro_release}" | tr '[:upper:]' '[:lower:]') = 'cooker' ]; then
+if [ "$(printf '%s\n' "${distro_release}" | tr '[:upper:]' '[:lower:]')" = 'cooker' ]; then
     repo_names="main"
     repo_url="http://abf-downloads.openmandriva.org/${distro_release}/repository/${arch}/main/release/"
 else
@@ -51,7 +51,7 @@ DISTRO_RELEASE="${distro_release}" \
 arm_platform_detector(){
 probe_cpu() {
 # probe cpu type
-cpu=$(uname -m)
+cpu="$(uname -m)"
 case "${cpu}" in
     i386|i486|i586|i686|i86pc|BePC|x86_64)
 	cpu="i386"
@@ -101,7 +101,7 @@ else
     rm -f "${OUTPUT_FOLDER}"/*
 fi
 
-for arch in "${arches}" ; do
+for arch in ${arches} ; do
     # init mock-urpm config
     generate_config
     arm_platform_detector
@@ -118,7 +118,7 @@ for arch in "${arches}" ; do
 	exit 1
     fi
 
-    chroot=$(ls -1 "${chroot_path}" | grep "${arch}" | head -1)
+    chroot="$(ls -1 "${chroot_path}" | grep "${arch}" | head -1)"
 
     if [ "${chroot}" = '' ]; then
 	printf '%s\n' '--> Build failed: chroot does not exist.'
