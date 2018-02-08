@@ -247,7 +247,7 @@ test_rpm() {
 	    test_code=$?
 	    try_retest=false
 	    if [[ $test_code != 0 && $retry < $MAX_RETRIES ]] ; then
-		if grep -q "$RETRY_GREP_STR" $test_log.tmp; then
+		if grep -q "$RETRY_GREP_STR" "${test_log}".tmp; then
 		    echo '--> Repository was changed in the middle, will rerun the tests' >> "${test_log}"
 		    sleep ${WAIT_TIME}
 		    sudo chroot "${TEST_CHROOT_PATH}" urpmi.update -a >> "${test_log}" 2>&1
@@ -324,7 +324,7 @@ if [ $rc != 0 ] || [ ! -e "${OUTPUT_FOLDER}"/*.src.rpm ]; then
     # 99% of all build failures at src.rpm creation is broken deps
     # m1 show only first match -oP show only matching
     grep -m1 -oP "\(due to unsatisfied(.*)$" "${OUTPUT_FOLDER}"/root.log >> ~/build_fail_reason.log
-    [ -n $subshellpid ] && kill $subshellpid
+    [ -n "$subshellpid" ] && kill "$subshellpid"
     cleanup
     exit 1
 fi
@@ -356,7 +356,7 @@ if [ "${rc}" != 0 ]; then
 # clean all the rpm files because build was not completed
     grep -m1 -i -oP "$GREP_PATTERN" "${OUTPUT_FOLDER}"/root.log >> ~/build_fail_reason.log
     rm -rf "${OUTPUT_FOLDER}"/*.rpm
-    [ -n $subshellpid ] && kill $subshellpid
+    [ -n "$subshellpid" ] && kill "$subshellpid"
     cleanup
     exit 1
 fi
