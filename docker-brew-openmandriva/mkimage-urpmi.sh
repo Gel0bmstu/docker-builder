@@ -39,7 +39,7 @@ target_dir="${rootfsdir}/rootfs"
 
 errorCatch() {
     echo "Error catched. Exiting"
-    rm -rf ""${target_dir}""
+    rm -rf "${target_dir}"
     exit 1
 }
 
@@ -64,17 +64,17 @@ fi
 
 # run me here
 install_chroot(){
-    urpmi.addmedia main_release $mirror --urpmi-root ""${target_dir}"";
+    urpmi.addmedia main_release "${mirror}" --urpmi-root "${target_dir}";
 
     if [ ! -z $updates ]; then
-	urpmi.addmedia main_updates $update_mirror --urpmi-root ""${target_dir}"";
+	urpmi.addmedia main_updates $update_mirror --urpmi-root "${target_dir}";
     fi
     urpmi basesystem-minimal passwd urpmi distro-release-OpenMandriva locales locales-en "${systemd}" \
 	--auto \
 	--no-suggests \
 	--no-verify-rpm \
-	--urpmi-root ""${target_dir}"" \
-	--root ""${target_dir}""
+	--urpmi-root "${target_dir}" \
+	--root "${target_dir}"
 
     if [ $? != 0 ]; then
 	echo "Creating urpmi chroot failed."
@@ -142,24 +142,24 @@ if [ ! -z ${systemd} ]; then
 	rm -f "${target_dir}"/lib/systemd/system/anaconda.target.wants/*;
 fi
 
-if [ -d ""${target_dir}"/etc/sysconfig" ]; then
+if [ -d "${target_dir}"/etc/sysconfig ]; then
 # allow networking init scripts inside the container to work without extra steps
-    echo 'NETWORKING=yes' > ""${target_dir}"/etc/sysconfig/network"
+    echo 'NETWORKING=yes' > "${target_dir}"/etc/sysconfig/network
 fi
 
 # make sure /etc/resolv.conf has something useful in it
-mkdir -p ""${target_dir}"/etc"
-cat > ""${target_dir}"/etc/resolv.conf" <<'EOF'
+mkdir -p "${target_dir}"/etc
+cat > "${target_dir}"/etc/resolv.conf <<'EOF'
 nameserver 8.8.8.8
 nameserver 8.8.4.4
 EOF
 
 if [ ! -z "{$without_user}" ]; then
 	# Create user omv, password omv
-	echo 'omv:x:1001:1001::/home/omv:/bin/bash' >>""${target_dir}""/etc/passwd
-	echo 'omv:$6$rG3bQ92hkTNubV1p$5qPB9FoXBhNcSE1FOklCoEDowveAgjSf2cHYVwCENZaWtgpFQaRRRN5Ihwd8nuaKMdA1R1XouOasJ7u5dbiGt0:17302:0:99999:7:::' >>""${target_dir}""/etc/shadow
-	echo 'omv:x:1001:' >>""${target_dir}""/etc/group
-	sed -i -e 's,wheel:x:10:$,wheel:x:10:omv,' ""${target_dir}""/etc/group
+	echo 'omv:x:1001:1001::/home/omv:/bin/bash' >>"${target_dir}"/etc/passwd
+	echo 'omv:$6$rG3bQ92hkTNubV1p$5qPB9FoXBhNcSE1FOklCoEDowveAgjSf2cHYVwCENZaWtgpFQaRRRN5Ihwd8nuaKMdA1R1XouOasJ7u5dbiGt0:17302:0:99999:7:::' >> "${target_dir}"/etc/shadow
+	echo 'omv:x:1001:' >>"${target_dir}"/etc/group
+	sed -i -e 's,wheel:x:10:$,wheel:x:10:omv,' "${target_dir}"/etc/group
 fi
 
 if [ ! -z "${passwd}" ]; then
@@ -167,7 +167,7 @@ if [ ! -z "${passwd}" ]; then
 	echo "change password to ${ROOT_PASSWD}"
 	sudo chroot "${target_dir}" /bin/bash -c "echo '${ROOT_PASSWD}' |passwd root --stdin"
 
-	cat << EOF > ""${target_dir}""/README.omv
+	cat << EOF > "${target_dir}"/README.omv
 OpenMandriva $installversion distro
 default login\password is root:root
 You must change it!
@@ -180,9 +180,9 @@ else
     tarFile="${rootfsdir}"/rootfs-"${arch}".tar.xz"
 fi
 
-cd ""${target_dir}""
+cd "${target_dir}"
 rm -fv usr/bin/qemu-*
 tar --numeric-owner -caf "${tarFile}" -c .
 cd ..
-rm -rf ""${target_dir}""
+rm -rf "${target_dir}"
 rm -fv /etc/rpm/platform
