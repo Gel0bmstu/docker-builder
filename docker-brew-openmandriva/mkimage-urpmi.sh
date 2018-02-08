@@ -154,7 +154,7 @@ nameserver 8.8.8.8
 nameserver 8.8.4.4
 EOF
 
-if [ ! -z "${$without_user}" ]; then
+if [ ! -z "${without_user}" ]; then
 	# Create user omv, password omv
 	echo 'omv:x:1001:1001::/home/omv:/bin/bash' >>"${target_dir}"/etc/passwd
 	echo 'omv:$6$rG3bQ92hkTNubV1p$5qPB9FoXBhNcSE1FOklCoEDowveAgjSf2cHYVwCENZaWtgpFQaRRRN5Ihwd8nuaKMdA1R1XouOasJ7u5dbiGt0:17302:0:99999:7:::' >> "${target_dir}"/etc/shadow
