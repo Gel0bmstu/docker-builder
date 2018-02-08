@@ -5,10 +5,8 @@ printf '%s\\n' '--> docker-builder/cachedchroot.sh'
 MOCK_BIN=/usr/bin/mock-urpm
 config_dir=/etc/mock-urpm/
 OUTPUT_FOLDER=/home/omv/iso_builder/results
-filestore_url="http://file-store.openmandriva.org/api/v1/file_stores"
 distro_release=${DISTRO_RELEASE:-"cooker"}
 platform_name=${PLATFORM_NAME:-"openmandriva"}
-token="$TOKEN"
 arches=${ARCHES:-"i586 x86_64 aarch64 armv7hl"}
 
 chroot_path="/var/lib/mock-urpm"
@@ -23,7 +21,7 @@ cleanup() {
 # wipe all
 cleanup
 
-if [ "$(uname -m)" = 'x86_64' ] && printf '%s\n' "${platform_arch}" |grep -qE 'i[0-9]86'; then
+if [ "$(uname -m)" = 'x86_64' ] && printf '%s\n' "${arch}" | grep -qE 'i[0-9]86'; then
     # Change the kernel personality so build scripts don't think
     # we're building for 64-bit
     MOCK_BIN="/usr/bin/i386 ${MOCK_BIN}"
