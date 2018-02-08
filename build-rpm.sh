@@ -212,7 +212,7 @@ test_rpm() {
 	printf '%s\n' "--> Re-running tests on $(date -u)" >> "${test_log}"
 	arr=($packages)
 	cd "$build_package" || exit 1
-	for package in ${arr[@]} ; do
+	for package in "${arr[@]}" ; do
 	    echo "--> Downloading '$package'..." >> "${test_log}"
 	    wget http://file-store.openmandriva.org/api/v1/file_stores/$package --content-disposition --no-check-certificate
 	    rc=$?
@@ -409,7 +409,7 @@ validate_arch() {
     validate_build() {
 	local _PLATFORM=($1)
 # count for occurences
-	for item in ${SPEC_ARCH[@]}; do
+	for item in "${SPEC_ARCH[@]}"; do
 	    if [[ "${_PLATFORM[@]}" =~ "${item}" ]] ; then
 		FOUND_MATCH=1
 		echo "--> Found match of ${item} in ${_PLATFORM[@]} for ${BUILD_TYPE}"
