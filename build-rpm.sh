@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 
 cleanup() {
 printf '%s\n' '--> Cleaning up...'
@@ -90,19 +89,19 @@ project_name="$(echo ${git_repo} | sed s%.*/%% | sed s/.git$//)"
 echo '[' > ${c_data}
 comma=0
 for rpm in "${OUTPUT_FOLDER}"/*.rpm; do
-    nevr="$(rpm -qp --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE}" "${rpm}")"
-    name=${nevr[0]}
+    set -- `rpm -qp --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE}" "${rpm}"`
+    name="$1"
     if [ "${name}" != '' ]; then
-	if [ "${comma}" = '1' ]; then
+	if [ "$comma" = '1' ]; then
 		echo -n "," >> ${c_data}
 	fi
-	if [ "${comma}" = '1' ]; then
+	if [ "$comma" = '1' ]; then
 		comma=1
 	fi
 	fullname="$(basename "${rpm}")"
-	epoch=${nevr[1]}
-	version=${nevr[2]}
-	release=${nevr[3]}
+	epoch="$2"
+	version="$3"
+	release="$4"
 
 	dep_list=""
 	[[ ! "${fullname}" =~ .*src.rpm$ ]] && dep_list=`urpmq --whatrequires ${name} | sort -u | xargs urpmq --sourcerpm | cut -d\  -f2 | rev | cut -f3- -d- | rev | sort -u | grep -v "^${project_name}$" | xargs echo`
