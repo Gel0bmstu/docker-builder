@@ -93,12 +93,10 @@ for rpm in "${OUTPUT_FOLDER}"/*.rpm; do
     nevr="$(rpm -qp --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE}" "${rpm}")"
     name=${nevr[0]}
     if [ "${name}" != '' ]; then
-	if [ $comma -eq 1 ]
-	then
+	if [ "${comma}" = '1' ]; then
 		echo -n "," >> ${c_data}
 	fi
-	if [ $comma -eq 0 ]
-	then
+	if [ "${comma}" = '1' ]; then
 		comma=1
 	fi
 	fullname="$(basename "${rpm}")"
